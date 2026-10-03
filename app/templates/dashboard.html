@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    /* استایل سوییچ شبیه استانداردهای موبایل برای کارفرما */
+    .toggle-checkbox:checked {
+        right: 0;
+        border-color: #2563eb;
+    }
+
+    .toggle-checkbox:checked+.toggle-label {
+        background-color: #2563eb;
+    }
+
+    .toggle-checkbox {
+        right: 24px;
+        border-color: #cbd5e1;
+        z-index: 1;
+    }
+</style>
+
+<nav class="bg-blue-700 text-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16 items-center">
+            <div class="font-bold text-xl">پنل مدیریت</div>
+            <a href="/logout"
+                class="bg-blue-800 hover:bg-blue-900 px-4 py-2 rounded-lg text-sm transition-colors">خروج</a>
+        </div>
+    </div>
+</nav>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+    {% if request.query_params.get("success") %}
+    <div class="bg-green-100 text-green-700 p-4 rounded-xl mb-6 shadow-sm border border-green-200 fade-in">
+        تنظیمات با موفقیت ذخیره شد.
+    </div>
+    {% endif %}
+
+    <!-- باکس نمایش آمار انتقال‌ها -->
+    <div
+        class="bg-white rounded-2xl shadow-lg border border-blue-50 p-6 mb-8 flex flex-col md:flex-row items-center justify-between">
+        <div class="flex items-center gap-4 mb-4 md:mb-0">
+            <div class="bg-blue-100 p-3 rounded-full text-2xl">📊</div>
+            <div>
+                <h3 class="text-lg font-bold text-blue-900">آمار انتقال محتوا</h3>
+                <p class="text-sm text-blue-500">تعداد پست‌های منتشر شده با موفقیت در واتس‌اپ</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-4 w-full md:w-auto">
+            <select id="statsFilter" onchange="fetchStats()"
+                class="border border-blue-200 text-blue-800 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50">
+                <option value="all_time">کل زمان‌ها</option>
+                <option value="yesterday">۲۴ ساعت گذشته</option>
+                <option value="last_month">۳۰ روز گذشته</option>
+            </select>
+            <div class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold text-xl min-w-[80px] text-center shadow-md"
+                id="statsResult">...</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- فرم تنظیمات اصلی -->
+        <div class="bg-white rounded-2xl shadow-lg border border-blue-50 p-6">
+            <h2 class="text-xl font-bold text-blue-800 mb-6 flex items-center">
+                <span class="bg-blue-100 p-2 rounded-lg ml-3">⚙️</span> تنظیمات پایه
+            </h2>
+            <form action="/settings" method="POST" class="space-y-6">
+
+                <!-- سوییچ وضعیت ربات -->
+                <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-blue-900 text-sm">وضعیت همگام‌سازی</h3>
+                        <p class="text-xs text-blue-500">آیا انتقال محتوا روشن باشد؟</p>
+                    </div>
+                    <div class="relative inline-block w-12 align-middle select-none">
+                        <input type="checkbox" name="is_sync_active" id="sync_toggle" value="true"
+                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out"
+                            {% if settings.is_sync_active %}checked{% endif %} />
+                        <label for="sync_toggle"
+                            class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer transition-colors duration-200 ease-in-out"></label>
+                    </div>
+                </div>
+
+                <!-- تنظیمات توکن‌ها و کانال‌ها -->
+                <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                    <label class="block text-sm font-bold text-blue-900 mb-2">توکن Whapi.cloud</label>
+                    <input type="text" name="whapi_token" value="{{ settings.whapi_token or '' }}"
+                        class="w-full px-4 py-2 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-500 text-left mb-4"
+                        dir="ltr">
+
+                    <label class="block text-sm font-bold text-blue-900 mb-2">شناسه کانال تلگرام (مبدا)</label>
+                    <input type="text" name="telegram_channel_id" value="{{ settings.telegram_channel_id or '' }}"
+                        placeholder="مثال: @my_telegram_channel"
+                        class="w-full px-4 py-2 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-500 text-left mb-4"
+                        dir="ltr">
+
+                    <label class="block text-sm font-bold text-blue-900 mb-2">شناسه کانال واتس‌اپ (مقصد)</label>
+                    <input type="text" name="whatsapp_channel_id" value="{{ settings.whatsapp_channel_id or '' }}"
+                        placeholder="مثال: 120363000000000000@newsletter"
+                        class="w-full px-4 py-2 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-500 text-left"
+                        dir="ltr">
+                </div>
+
+                <!-- مدیریت لینک‌های فوتر -->
+                <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                    <h3 class="font-bold text-blue-800 mb-4 flex items-center">
+                        🔗 مدیریت لینک‌های فوتر واتس‌اپ
+                    </h3>
+                    <p class="text-xs text-blue-600 mb-4">در صورت نیاز به لینک کمتر، فیلدهای اضافه را خالی بگذارید.</p>
+                    {% for i in range(1, 5) %}
+                    <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                        <input type="text" name="link{{ i }}_title" value="{{ settings['link' ~ i ~ '_title'] or '' }}"
+                            placeholder="لیبل لینک {{ i }}"
+                            class="w-full sm:w-1/2 px-4 py-2 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-500">
+                        <input type="text" name="link{{ i }}_url" value="{{ settings['link' ~ i ~ '_url'] or '' }}"
+                            placeholder="آدرس لینک {{ i }}"
+                            class="w-full sm:w-1/2 px-4 py-2 rounded-lg border border-blue-200 focus:ring-2 focus:ring-blue-500 text-left"
+                            dir="ltr">
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <button type="submit"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition-colors">ذخیره
+                    تنظیمات</button>
+            </form>
+        </div>
+
+        <!-- گزارشات و لاگ‌ها -->
+        <div class="bg-white rounded-2xl shadow-lg border border-blue-50 p-6 flex flex-col h-[800px]">
+            <h2 class="text-xl font-bold text-blue-800 mb-6 flex items-center">
+                <span class="bg-blue-100 p-2 rounded-lg ml-3">📅</span> تاریخچه انتقال‌ها
+            </h2>
+            <div class="overflow-y-auto flex-1 pr-2 space-y-3">
+                {% if logs %}
+                {% for log in logs %}
+                <div
+                    class="p-4 rounded-xl border {% if log.status == 'success' %}bg-blue-50 border-blue-100{% else %}bg-red-50 border-red-100{% endif %}">
+                    <div class="flex justify-between items-start mb-2">
+                        <span
+                            class="text-sm font-bold {% if log.status == 'success' %}text-blue-700{% else %}text-red-700{% endif %}">
+                            {% if log.status == 'success' %}✅ ارسال موفق{% else %}❌ خطا در ارسال{% endif %}
+                        </span>
+                        <span class="text-xs text-slate-500" dir="ltr">{{ log.created_at.strftime('%Y-%m-%d %H:%M')
+                            }}</span>
+                    </div>
+                    <div class="text-xs text-slate-600 flex gap-4">
+                        <span>ID پیام تلگرام: <b dir="ltr">{{ log.telegram_message_id }}</b></span>
+                    </div>
+                    {% if log.error_details %}
+                    <details class="mt-2 group border border-red-200 rounded-lg overflow-hidden">
+                        <summary
+                            class="text-xs bg-red-50 text-red-600 p-2 cursor-pointer hover:bg-red-100 transition-colors list-none flex items-center justify-between font-semibold select-none">
+                            <span>نمایش جزئیات خطا</span>
+                            <span class="group-open:rotate-180 transition-transform duration-200 text-[10px]">▼</span>
+                        </summary>
+                        <div class="p-3 text-[11px] bg-white text-slate-700 border-t border-red-100 text-left" dir="ltr"
+                            style="word-break: break-all; white-space: pre-wrap;">
+                            {{ log.error_details }}
+                        </div>
+                    </details>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center text-blue-400 py-10">هیچ لاگی تا کنون ثبت نشده است.</div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<script>
+    // تابع دریافت آمار به صورت زنده بدون رفرش صفحه
+    async function fetchStats() {
+        const filterType = document.getElementById("statsFilter").value;
+        const resultSpan = document.getElementById("statsResult");
+        resultSpan.innerText = "...";
+        try {
+            const response = await fetch(`/api/stats?filter_type=${filterType}`);
+            const data = await response.json();
+            resultSpan.innerText = data.count || "0";
+        } catch (error) {
+            resultSpan.innerText = "!";
+        }
+    }
+    document.addEventListener("DOMContentLoaded", fetchStats);
+</script>
+{% endblock %}

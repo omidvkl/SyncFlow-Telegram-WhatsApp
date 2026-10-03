@@ -1,0 +1,61 @@
+/* app/static/css/style.css */
+
+/* سفارشی‌سازی اسکرول‌بار سیستم برای هماهنگی با تم آبی پنل */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #eff6ff; /* blue-50 */
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #93c5fd; /* blue-300 */
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #3b82f6; /* blue-500 */
+}
+
+/* اعمال و بهینه‌سازی رندر فونت وزیرمتن به صورت سراسری */
+body {
+    font-family: 'Vazirmatn', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* جلوگیری از پرش اسکرول در صفحات کوتاه */
+    overflow-y: scroll; 
+}
+
+/* انیمیشن لودینگ نرم برای ورود به داشبورد و لاگین */
+.fade-in {
+    animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(10px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+/* استایل‌دهی به فوکوس فرم‌ها برای تجربه کاربری بهتر */
+input {
+    transition: all 0.3s ease;
+}
+
+input:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); /* blue-500 shadow */
+}
+
+/* تنظیم جهت‌گیری درست برای متون انگلیسی/لینک‌ها در پنل راست‌چین */
+.ltr-content {
+    direction: ltr;
+    text-align: left;
+}
